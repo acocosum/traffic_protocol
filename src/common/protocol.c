@@ -5,11 +5,47 @@
 
 #include "protocol.h"
 #include "crc16.h"
+#include "../utils/logger.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
+
+/**
+ * @brief 打印十六进制数据用于调试
+ * @param prefix 前缀信息
+ * @param data 数据指针
+ * @param len 数据长度
+ */
+static void hex_dump_debug(const char *prefix, const uint8_t *data, size_t len) {
+    if (!data || len == 0) {
+        return;
+    }
+    
+    // 限制打印长度，避免日志过长
+    size_t print_len = (len > 64) ? 64 : len;
+    
+    char hex_str[256];
+    char *pos = hex_str;
+    size_t remaining = sizeof(hex_str);
+    
+    for (size_t i = 0; i < print_len && remaining > 3; i++) {
+        int written = snprintf(pos, remaining, "%02X ", data[i]);
+        if (written > 0 && (size_t)written < remaining) {
+            pos += written;
+            remaining -= written;
+        } else {
+            break;
+        }
+    }
+    
+    if (len > print_len) {
+        snprintf(pos, remaining, "... (%zu more bytes)", len - print_len);
+    }
+    
+    LOG_DEBUG("%s: %s", prefix, hex_str);
+}
 
 /**
  * @brief 对数据进行转义编码
@@ -232,6 +268,16 @@ protocol_result_t decode_frame(const uint8_t *buffer, size_t buffer_len, protoco
     uint16_t calculated_crc = calculate_crc16(unescaped_data, unescaped_len - 2);
     
     if (received_crc != calculated_crc) {
+        // 详细的CRC校验失败日志
+        LOG_ERROR("CRC verification failed: received=0x%04X, calculated=0x%04X, data_len=%d", 
+                  received_crc, calculated_crc, unescaped_len - 2);
+        
+        // 打印原始接收数据的十六进制dump用于调试
+        hex_dump_debug("Raw received data", buffer, buffer_len);
+        
+        // 打印转义解码后的数据
+        hex_dump_debug("Unescaped data", unescaped_data, unescaped_len);
+        
         return PROTOCOL_ERROR_CRC;
     }
     
