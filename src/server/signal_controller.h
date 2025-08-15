@@ -13,6 +13,7 @@
 #define HEARTBEAT_INTERVAL 5    // 心跳间隔(秒)
 #define HEARTBEAT_TIMEOUT 15    // 心跳超时(秒)
 #define DEFAULT_PORT 40000      // 默认端口
+#define CLIENT_RECV_BUFFER_SIZE 4096  // 客户端接收缓冲区大小
 
 /**
  * @brief 客户端连接信息结构体
@@ -23,6 +24,10 @@ typedef struct {
     time_t last_heartbeat;      // 最后心跳时间
     int connected;              // 连接状态
     char ip_addr[16];           // 客户端IP地址
+    
+    // TCP粘包处理相关字段
+    uint8_t recv_buffer[CLIENT_RECV_BUFFER_SIZE];  // 接收缓冲区
+    size_t recv_buffer_len;     // 缓冲区当前数据长度
 } client_info_t;
 
 /**
@@ -76,6 +81,28 @@ int handle_new_connection(signal_controller_t *controller);
  * @return 0成功，-1失败
  */
 int handle_client_message(signal_controller_t *controller, int client_idx);
+
+/**
+ * @brief 从缓冲区中提取完整的协议帧
+ * @param buffer 缓冲区指针
+ * @param buffer_len 缓冲区长度指针
+ * @param frame_start 提取的帧开始位置
+ * @param frame_len 提取的帧长度
+ * @return 1找到完整帧，0没有完整帧，-1错误
+ */
+int extract_complete_frame(uint8_t *buffer, size_t *buffer_len, 
+                          size_t *frame_start, size_t *frame_len);
+
+/**
+ * @brief 处理单个协议帧
+ * @param controller 控制机指针
+ * @param client_idx 客户端索引
+ * @param frame_data 帧数据
+ * @param frame_len 帧长度
+ * @return 0成功，-1失败
+ */
+int process_single_frame(signal_controller_t *controller, int client_idx,
+                        const uint8_t *frame_data, size_t frame_len);
 
 /**
  * @brief 发送心跳查询
