@@ -349,7 +349,21 @@ int process_single_frame(signal_controller_t *controller, int client_idx,
     protocol_frame_t frame;
     protocol_result_t result = decode_frame(frame_data, frame_len, &frame);
     if (result != PROTOCOL_SUCCESS) {
-        LOG_WARN("Failed to decode frame from client %d, error: %d", client_idx, result);
+        const char* error_names[] = {
+            "SUCCESS", "INVALID_PARAM", "BUFFER_SMALL", "CRC", 
+            "FORMAT", "ESCAPE", "INCOMPLETE"
+        };
+        const char* error_name = (result < sizeof(error_names)/sizeof(error_names[0])) 
+                                ? error_names[result] : "UNKNOWN";
+        
+        LOG_WARN("Failed to decode frame from client %d, error: %d (%s), data_len: %d", 
+                 client_idx, result, error_name, recv_len);
+        
+        // 对于CRC错误，提供额外的调试信息
+        if (result == PROTOCOL_ERROR_CRC) {
+            LOG_ERROR("CRC error details: client_idx=%d, client_ip=%s, received_bytes=%d", 
+                      client_idx, controller->clients[client_idx].ip_addr, recv_len);
+        }
         
         // 发送错误应答
         protocol_frame_t error_frame = create_error_frame(
@@ -366,6 +380,10 @@ int process_single_frame(signal_controller_t *controller, int client_idx,
         free_frame(&error_frame);
         return 0;
     }
+    
+    // 成功解析协议帧，记录调试信息
+    LOG_DEBUG("Successfully decoded frame from client %d: operation=0x%02X, object_id=0x%04X, content_len=%d",
+              client_idx, frame.data.operation, frame.data.object_id, frame.data.content_len);
     
     // 根据对象标识处理不同类型的消息
     switch (frame.data.object_id) {
