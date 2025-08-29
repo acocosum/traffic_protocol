@@ -1,1 +1,26 @@
+# Build artifacts
+build/
+bin/
+*.o
+*.a
+*.so
+*.dll
+*.exe
 
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Temporary files
+tmp/
+temp/
