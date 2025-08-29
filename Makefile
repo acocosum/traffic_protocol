@@ -37,7 +37,7 @@ SERVER_LIB = $(BUILDDIR)/libtraffic_server.a
 CLIENT_LIB = $(BUILDDIR)/libtraffic_client.a
 
 # 默认目标
-.PHONY: all clean install uninstall help test
+.PHONY: all clean install uninstall help test test-frame
 
 all: directories $(SERVER_DEMO) $(CLIENT_DEMO)
 
@@ -67,6 +67,19 @@ $(CLIENT_LIB): $(CLIENT_OBJECTS)
 	@echo "Creating client library: $@"
 	@ar rcs $@ $^
 
+# 测试程序
+FRAME_TEST = $(BINDIR)/frame_processing_test
+
+# 编译测试程序
+$(FRAME_TEST): tests/frame_processing_test.c $(COMMON_LIB) $(UTILS_LIB) $(SERVER_LIB)
+	@echo "Building frame processing test: $@"
+	@$(CC) $(CFLAGS) -I$(SRCDIR) -o $@ $< $(SERVER_LIB) $(UTILS_LIB) $(COMMON_LIB) $(LDFLAGS)
+
+# 运行帧处理测试
+test-frame: $(FRAME_TEST)
+	@echo "Running frame processing tests..."
+	@./$(FRAME_TEST)
+
 # 编译示例程序
 $(SERVER_DEMO): $(EXAMPLESDIR)/server_demo.c $(COMMON_LIB) $(UTILS_LIB) $(SERVER_LIB)
 	@echo "Building server demo: $@"
@@ -80,7 +93,7 @@ $(CLIENT_DEMO): $(EXAMPLESDIR)/client_demo.c $(COMMON_LIB) $(UTILS_LIB) $(CLIENT
 clean:
 	@echo "Cleaning build files..."
 	@rm -rf $(BUILDDIR)/*.o $(BUILDDIR)/*.a $(BUILDDIR)/*/*.o
-	@rm -f $(SERVER_DEMO) $(CLIENT_DEMO)
+	@rm -f $(SERVER_DEMO) $(CLIENT_DEMO) $(FRAME_TEST)
 	@echo "Clean completed"
 
 # 深度清理
@@ -133,21 +146,23 @@ check:
 # 显示帮助
 help:
 	@echo "Available targets:"
-	@echo "  all       - Build all components (default)"
-	@echo "  clean     - Remove object files and executables"
-	@echo "  distclean - Remove all build artifacts"
-	@echo "  debug     - Build debug version"
-	@echo "  release   - Build optimized release version"
-	@echo "  install   - Install binaries to /usr/local/bin"
-	@echo "  uninstall - Remove installed binaries"
-	@echo "  test      - Run basic functionality test"
-	@echo "  check     - Run static code analysis"
-	@echo "  help      - Show this help message"
+	@echo "  all         - Build all components (default)"
+	@echo "  clean       - Remove object files and executables"
+	@echo "  distclean   - Remove all build artifacts"
+	@echo "  debug       - Build debug version"
+	@echo "  release     - Build optimized release version"
+	@echo "  install     - Install binaries to /usr/local/bin"
+	@echo "  uninstall   - Remove installed binaries"
+	@echo "  test        - Run basic functionality test"
+	@echo "  test-frame  - Run frame processing tests"
+	@echo "  check       - Run static code analysis"
+	@echo "  help        - Show this help message"
 	@echo ""
 	@echo "Example usage:"
 	@echo "  make all          # Build everything"
 	@echo "  make debug        # Build debug version"
 	@echo "  make test         # Run tests"
+	@echo "  make test-frame   # Run frame processing tests"
 	@echo "  make clean        # Clean build files"
 
 # 显示编译信息
