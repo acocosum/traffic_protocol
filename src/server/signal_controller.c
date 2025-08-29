@@ -356,13 +356,13 @@ int process_single_frame(signal_controller_t *controller, int client_idx,
         const char* error_name = (result < sizeof(error_names)/sizeof(error_names[0])) 
                                 ? error_names[result] : "UNKNOWN";
         
-        LOG_WARN("Failed to decode frame from client %d, error: %d (%s), data_len: %d", 
-                 client_idx, result, error_name, recv_len);
+        LOG_WARN("Failed to decode frame from client %d, error: %d (%s), data_len: %zu", 
+                 client_idx, result, error_name, frame_len);
         
         // 对于CRC错误，提供额外的调试信息
         if (result == PROTOCOL_ERROR_CRC) {
-            LOG_ERROR("CRC error details: client_idx=%d, client_ip=%s, received_bytes=%d", 
-                      client_idx, controller->clients[client_idx].ip_addr, recv_len);
+            LOG_ERROR("CRC error details: client_idx=%d, client_ip=%s, received_bytes=%zu", 
+                      client_idx, controller->clients[client_idx].ip_addr, frame_len);
         }
         
         // 发送错误应答
